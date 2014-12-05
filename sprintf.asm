@@ -1,8 +1,8 @@
 .data
 outbuf:		.space 250
-string:		.asciiz "%%%"
-arg1:		.asciiz "Argument 1"
-arg2:		.asciiz "Argument 2"
+string:		.asciiz "hi"
+arg1:		.asciiz "Argument1"
+arg2:		.asciiz "Agrument 2"
 arg3:		.asciiz "Argument 3"
 
 
@@ -66,12 +66,15 @@ sprintf:
 		beq $t3, $t2, bee
 		beq $t4, $t2, c
 		beq $t5, $t2, s
+		beq $t2, 0, null
 		
+		null:	# if byte == 0, or 'null'
+			addi $s0, $s0, 2
+			j sprintf
 		else:	# if not branched anywhere, falls here
 			addi $s6, $s6, 1
 			addi $s0, $s0, 2
 			j sprintf
-			
 		d:	# %d
 			addi $s7, $s7, 1
 			addi $s0, $s0, 2
@@ -92,7 +95,7 @@ sprintf:
 			addi $s7, $s7, 1
 			addi $s0, $s0, 2
 			j sprintf
-
+			
 main:
 	# stack saving bidness
 	
@@ -112,11 +115,21 @@ main:
 	sw $t0, 4($sp)
 	la $t0, arg1
 	sw $t0, 0($sp)
-	jal sprintf
+	#jal sprintf
 	
 EXIT:
 	# ignore this shit. just output testing to make sure im doing things correctly
 	la $t7, outbuf
-	lb $a0, 0($t7)
 	li $v0, 11
+	
+	lb $a0, 0($t7)
+	#syscall
+	lb $a0, 4($t7)
+	#syscall
+	lb $a0, 8($t7)
+	#syscall
+	lb $a0, 12($t7)
+	#syscall
+	la $t7, string
+	lb $a0, 2($t7)
 	syscall
