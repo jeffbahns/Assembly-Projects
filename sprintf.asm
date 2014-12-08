@@ -49,7 +49,6 @@ li $s4, 0								# $s4 holds offset for %s string arg
 # %s7 tests for % functions
 ##########################################################################
 
-li $v0, 11
 j main									# start at main()
 sprintf:								# my pride and joy
 	start:								# start is where loads and inital checks begin
