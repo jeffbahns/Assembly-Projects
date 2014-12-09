@@ -1,19 +1,25 @@
-##########################################################################
-#################### GENERAL NOTES/TASKS #################################
+##################################################################################################
+#################### GENERAL NOTES/TASKS #########################################################
 # 1. If code commented => still testing
 # 2. Format = def sprintf(outbuf, string, arg1, arg2, arg3)
 # 3. NEED DONE:
-# 	[X] %d
-# 	[X] %u
-# 	[X] %b
-# 	[X] %c
-# 	[X] %s
-# 	[X] %else
-# 	[X] non-percent appending to outbuf
-##########################################################################
+# 	[Xip] %d
+# 	[Xip] %u
+# 	[Xx] %b
+# 	[Xx] %c
+# 	[Xx] %s
+# 	[Xx] %else
+# 	[Xx] non-percent appending to outbuf
+##################################################################################################
 
 .data
 outbuf: 	.space 250
+
+#string: 	.asciiz "%b"
+#arg1: 		.word 28
+#arg2: 		.asciiz "American"
+#arg3: 		.asciiz "A"
+
 string: 	.asciiz "T1: %d%% of all %ss like the %c letter"
 arg1: 		.word 87
 arg2: 		.asciiz "American"
@@ -29,10 +35,12 @@ arg3: 		.asciiz "A"
 #arg2: 		.asciiz "!"
 #arg3: 		.asciiz "How about that?"
 
-
+print1:		.asciiz "\""
+print2:		.asciiz "\" has " 
+print3:		.asciiz " letters."
 .text
-##########################################################################
-################### REFERENCE TABLE FOR REGISTERS ########################
+##################################################################################################
+################### REFERENCE TABLE FOR REGISTERS ################################################
 #
 # Initializing these values at zero is more of a formality
 #
@@ -44,10 +52,7 @@ li $s4, 0								# $s4 holds offset for %s string arg
 # $t0 is constantly repurposed, mostly used for loading things
 # $t1 holds pointer of string[i] byte
 # $t2 is where string byte is loaded
-# $s5 is testing for non %
-# %s6 tests for percents with non functional following
-# %s7 tests for % functions
-##########################################################################
+##################################################################################################
 
 j main									# start at main()
 sprintf:								# my pride and joy
@@ -103,6 +108,7 @@ sprintf:								# my pride and joy
 			li $v0, 1					# loads 1 into $v0 (code for printing integers)
 			move $a0, $t9					# moves number into $t9, for printing
 			syscall						# issues system call, to print integer
+			#addi $s5, $s5, 2				# update outbuf counter
 			j start						# goes back to start, to restart checks
 		u: 							# string[i+1] == 'u', comes here
 			add $t7, $sp, $s3				# finds correct argument in stack
@@ -116,7 +122,7 @@ sprintf:								# my pride and joy
 			li $v0, 1					# loads 1 into $v0 (code for printing integers)
 			move $a0, $t9					# moves $t9 to $a0 for printing
 			syscall						# issues system call, to print integer
-			#addi $s7, $s7, 1
+			#addi $s5, $s5, 2				# update outbuf counter
 			j start						# goes back to start, to restart checks
 		bin:							# string[i+1] == 'b', comes here
 			add $t7, $sp, $s3				# finds correct argument in stack
@@ -138,14 +144,14 @@ sprintf:								# my pride and joy
 				li $v0, 1				# loads 1 into $v0 (code for printing integers)
 				move $a0, $t8				# move $t8 to $a0 for printing
 				syscall					# issues system call, to print integer
-				li $t8, 0
+				#addi $s5, $s5, 1			# update outbuf counter
+				li $t8, 0				# reset $t8
 				srl $t5, $t5, 1				# shift our mask over once
 				addi $t6, $t6, 1			# counter decreased 
-				bne $t6, 32, bin_loop			
+				bne $t6, 32, bin_loop			# keep looping until looped 32 times
 			addi $s0, $s0, 2				# updates string offset
 			addi $s3, $s3, 4				# updates stack offset (how I find the correct arg)
 			addi $s4, $zero, 0				# argument offset back to zero, so can be used again					
-			#addi $s7, $s7, 1
 			j start						# goes back to start, to restart checks	
 		c: 							# string[i+1] == 'c', comes here
 			add $t7, $sp, $s3				# $t7 is pointer to correct argument in stack
@@ -157,8 +163,9 @@ sprintf:								# my pride and joy
 			addi $s2, $s2, 4				# updates outbuf offset
 			addi $s3, $s3, 4				# updates stack offset (how I find the correct arg)
 			li $v0, 11					# loads 11 into $v0 (code for printing characters)
-			move $a0, $t9					
+			move $a0, $t9					# moves $t9 into $a0 for printing		
 			syscall						# issues system call, to print char
+			addi $s5, $s5, 1				# update outbuf counter
 			j start						# goes back to start, to restart checks
 		s: 							# string[i+1] == 's', comes here
 			add $t7, $sp, $s3				# finds correct argument in stack
@@ -172,6 +179,7 @@ sprintf:								# my pride and joy
 				sub $t0, $t0, $s2			# resets the outbuf address
 				addi $s2, $s2, 4			# updates outbuf offset	
 				addi $s4, $s4, 1			# updates argument offset
+				addi $s5, $s5, 1			# update outbuf counter
 				li $v0, 11				# loads 11 into $v0 (code for printing characters)
 				move $a0, $t9				# moves $t9 into $a0 for printing
 				syscall					# issues system call, to print char
@@ -182,6 +190,8 @@ sprintf:								# my pride and joy
 				addi $s4, $zero, 0			# argument offset back to zero, so can be used again
 				j start					# goes back to start, to restart checks
 	END:								# for any ending procedures, and returning
+		move $v1, $s5						# move outbuf counter to $v1
+		addi $sp, $sp, 24					# return $sp
 		jr $ra							# return to main
 main:									# starting place
 	addi $sp, $sp, -24						# 24 stack spaces, for arguments and $ra
@@ -197,15 +207,16 @@ main:									# starting place
 	sw $t0, 4($sp)							# 2nd argument saved at 4
 	la $t0, arg1							# load 1st argument in $t0
 	sw $t0, 0($sp)							# 1st argument saved at 0
+	li $v0, 4							# loads $v0 for printing string
+	la $a0, print1							# loads $a0 with 1st print statement
+	syscall								# issues system call for printing
 	jal sprintf							# begin sprintf
-EXIT:									# drops here, any last prints i can make happen here
-	la $t7, outbuf
-	li $v0, 1
-	looper:
-		lb $a0, 0($t7)
-		beq $a0, 0, exiter
-		addi $t7, $t7, 4
-		#syscall
-		j looper
-	exiter:
-		##
+	li $v0, 4							# loads $v0 for printing string
+	la $a0, print2							# loads $a0 with 2nd print statement
+	syscall								# issues system call for printing
+	li $v0, 1							# loads $v0 for printing integer
+	move $a0, $v1							# moves returned outbuf counter into $a0
+	syscall								# issues system call for printing
+	li $v0, 4							# loads $v0 for printing string
+	la $a0, print3							# loads $a0 with 3rd print statement
+	syscall								# issues system call for printing
