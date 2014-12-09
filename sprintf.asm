@@ -1,17 +1,3 @@
-##################################################################################################
-#################### GENERAL NOTES/TASKS #########################################################
-# 1. If code commented => still testing
-# 2. Format = def sprintf(outbuf, string, arg1, arg2, arg3)
-# 3. NEED DONE:
-# 	[Xip] %d
-# 	[Xip] %u
-# 	[Xx] %b
-# 	[Xx] %c
-# 	[Xx] %s
-# 	[Xx] %else
-# 	[Xx] non-percent appending to outbuf
-##################################################################################################
-
 .data
 outbuf: 	.space 250
 
@@ -21,7 +7,7 @@ outbuf: 	.space 250
 #arg3: 		.asciiz "A"
 
 string: 	.asciiz "T1: %d%% of all %ss like the %c letter"
-arg1: 		.word 87
+arg1: 		.word -87
 arg2: 		.asciiz "American"
 arg3: 		.asciiz "A"
 
@@ -108,8 +94,12 @@ sprintf:								# my pride and joy
 			li $v0, 1					# loads 1 into $v0 (code for printing integers)
 			move $a0, $t9					# moves number into $t9, for printing
 			syscall						# issues system call, to print integer
-			#addi $s5, $s5, 2				# update outbuf counter
+			bltz $t9, adder					# decides if arg is negative
+			addi $s5, $s5, 2				# update outbuf counter
 			j start						# goes back to start, to restart checks
+			adder:						# updates outbuf counter
+				addi $s5, $s5, 3			# updates outbuf counter
+				j start					# goes back to start, to restart checks
 		u: 							# string[i+1] == 'u', comes here
 			add $t7, $sp, $s3				# finds correct argument in stack
 			lw $t8, 0($t7)					# loads address of argument into $t8
@@ -122,7 +112,7 @@ sprintf:								# my pride and joy
 			li $v0, 1					# loads 1 into $v0 (code for printing integers)
 			move $a0, $t9					# moves $t9 to $a0 for printing
 			syscall						# issues system call, to print integer
-			#addi $s5, $s5, 2				# update outbuf counter
+			addi $s5, $s5, 2				# update outbuf counter
 			j start						# goes back to start, to restart checks
 		bin:							# string[i+1] == 'b', comes here
 			add $t7, $sp, $s3				# finds correct argument in stack
@@ -144,7 +134,7 @@ sprintf:								# my pride and joy
 				li $v0, 1				# loads 1 into $v0 (code for printing integers)
 				move $a0, $t8				# move $t8 to $a0 for printing
 				syscall					# issues system call, to print integer
-				#addi $s5, $s5, 1			# update outbuf counter
+				addi $s5, $s5, 1			# update outbuf counter
 				li $t8, 0				# reset $t8
 				srl $t5, $t5, 1				# shift our mask over once
 				addi $t6, $t6, 1			# counter decreased 
